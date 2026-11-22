@@ -1,0 +1,161 @@
+<?php
+    declare(strict_types=1);
+
+    require_once __DIR__ . '/config/db.php';
+    require_once __DIR__ . '/includes/auth.php';
+    require_once __DIR__ . '/includes/function.php';
+
+    //Inisialisasi nilai bawaan
+    $languages          = getLanguages();
+    $visibilityOptions  = getVisibilityOptions();
+    $errors             = [];
+
+    $title              = '';
+    $language           = 'php';
+    $visibility         = 'public_internal';
+    $reviewDate         = date('Y-m-d');
+    $code               = '';
+    $notes              = '';
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        //Proses validasi
+        $title      = trim((string) ($_POST['title'] ?? ''));
+        $language   = (string) ($_POST['language'] ?? 'php');
+        $visibility = (string) ($_POST['visibility'] ?? 'public_internal');
+        $reviewDate = trim((string) ($_POST['review_date'] ?? ''));
+        $code       = (string) ($_POST['code'] ?? '');
+        $notes      = trim((string) ($_POST['notes'] ?? ''));
+
+        if ($title === '') {
+            $errors[] = 'Judul snippet wajib diisi.';
+        }
+
+        if (!array_key_exists($language, $languages)) {
+            $errors[] = 'Bahasa tidak valid.';
+        }
+
+        if (!array_key_exists($visibility, $visibilityOptions)) {
+            $errors[] = 'Pilihan visibilitas tidak valid.';
+        }
+
+        if ($reviewDate === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $reviewDate)) {
+            $errors[] = 'Tanggal review harus valid.';
+        }
+
+        if (trim($code) === '') {
+            $errors[] = 'Kode snippet wajib diisi.';
+        }
+
+        //Panggil untuk memproses file upload
+        $attachmentPath = handleSnippetUpload($_FILES['attachment'] ?? [], null, $errors, false);
+
+        if (empty($errors)) {
+            //Menyiapkan query
+            $stmt = $conf->prepare(
+                'INSERT INTO snippets (user_id, title, language, visibility, review_date, :code, :notes, :attachment_path)
+                VALUES (:user_id, :title, :language, :visibility, :review_date, :code, :notes, :attachment_path)'
+            );
+            //Menjalankan query
+            $stmt->execute([
+                //user_id diambil dari $_SESSION['user_id']
+                ':user_id'      => (int) $_SESSION['user_id'],
+                ':title'        => $title,
+                ':language'     => $visibility,
+                ':review_date'  => $reviewDate,
+                ':code'         => $code,
+                ':notes'        => $notes !== '' ? $notes : null,
+                ':attachment_path'  => $attachmentPath,
+            ]);
+
+            header('Location: dashboard.php?msg=created');
+            exit;
+        }
+    }
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tambah Snippet - Snippet Manager</title>
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+    <div class="wrap">
+        <div class="card form-card">
+            <div class="top">
+                <h2>Tambah Snippet Baru</h2>
+                <a href="logout.php" class="btn btn-logout">Logout</a>
+            </div>
+
+            <?php if (!empty($errors)): ?>
+                <div class="err-box">
+                    <ul>
+                        <?php foreach ($errors as $err): ?>
+                            <li><?=  e($err) ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+            <?php endif; ?>
+
+            <form action="create.php" method="POST" enctype="multipart/form-data">
+                <div class="field">
+                    <label for="title" class="lbl">Judul Snippet</label>
+                    <input type="text" id="title" name="title" value="<?=  e($title) ?>" required>
+                </div>
+
+                <div class="field">
+                    <label for="language" class="lbl">Bahasa / Topik</label>
+                    <select name="language" id="language">
+                        <?php foreach ($languages as $key => $label): ?>
+                            <option value="<?=  e($key) ?>" <?=  $language === $key ? 'selected' : '' ?>>
+                                <?=  e($label) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <span class="lbl">Visibilitas</span>
+                    <div class="radio-row">
+                        <?php foreach ($visibilityOptions as $val => $text): ?>
+                            <label>
+                                <input type="radio" name="visibility" value="<?=  e($val) ?>" 
+                                <?=  $visibility === $val ? 'checked' : '' ?>>
+                                <?=  e($text) ?>
+                            </label>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label for="review_date" class="lbl">Tanggal Review</label>
+                    <input type="date" id="review_date" name="reveiw_date" 
+                    value="<?=  e($reviewDate) ?>" required>
+                </div>
+
+                <div class="field">
+                    <label for="code" class="lbl">Potongan Kode</label>
+                    <textarea name="code" id="code" class="code-area" required><?= e($code) ?></textarea>
+                </div>
+
+                <div class="field">
+                    <label for="notes" class="lbl">Catatan &amp; Penjelasan</label>
+                    <textarea name="notes" id="notes" class="notes-area"><?=  e($notes) ?></textarea>
+                </div>
+
+                <div class="field">
+                    <label for="attachment" class="lbl">Lampiran File / Gambar</label>
+                    <input type="file" id="attachment" name="attachment">
+                    <div class="file-meta file-selected-info"></div>
+                </div>
+
+                <button class="btn btn-primary" type="submit">Simpan Snippet</button>
+                <a href="dashboard.php" class="btn btn-muted">Kembali</a>
+            </form>
+        </div>
+    </div>
+    <script src="assets/app.js" defer></script>
+</body>
+</html>
