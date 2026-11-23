@@ -5,7 +5,7 @@
     try {
         $conf = new PDO(
             // Koneksi ke database
-            dsn: 'mysqk:host=localhost;dbname=snipper_manager_3716;charset=utf8mb4',
+            dsn: 'mysql:host=localhost;dbname=snippet_manager_3716;charset=utf8mb4',
             username: 'root',
             password: 'ivy13534',
             options: [
