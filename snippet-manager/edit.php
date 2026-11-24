@@ -123,18 +123,10 @@
     }
 
     $initialHljsClass = $hljsLangMap[$language] ?? 'plaintext';
+    $pageTitle        = 'Edit Snippet - Snippet Manager';
+    require_once __DIR__ . '/includes/header.php';
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Snippet - Snippet Manager</title>
-    <link rel="stylesheet" href="assets/atom-one-dark.min.css">
-    <link rel="stylesheet" href="assets/style.css">
-</head>
-<body>
     <div class="wrap">
         <div class="card form-card">
             <div class="top">
@@ -228,7 +220,4 @@
             </form>
         </div>
     </div>
-    <script src="assets/highlight.min.js"></script>
-    <script src="assets/app.js" defer></script>
-</body>
-</html>
+<?php require_once __DIR__ . '/includes/footer.php'; ?>
