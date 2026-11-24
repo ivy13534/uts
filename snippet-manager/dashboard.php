@@ -11,7 +11,7 @@
         $deleteId = (int) ($_POST['id'] ?? 0);
 
         if ($deleteId > 0) {
-            $getFile = $conf->prepare('SE;ECT attachment_path FROM snippets WHERE id = :id');
+            $getFile = $conf->prepare('SELECT attachment_path FROM snippets WHERE id = :id');
             $getFile->execute([':id' => $deleteId]);
             $rowFile = $getFile->fetch();
 
@@ -47,8 +47,11 @@
     $params = [];
 
     if ($search !== '') {
-        $sql .= ' AND (s.title LIKE :q OR s.code LIKE :q OR s.notes LIKE :q)';
-        $params[':q'] = '%' . $search . '%';
+        $likeTerm = '%' . $search . '%';
+        $sql .= ' AND (s.title LIKE :q_title OR s.code LIKE :q_code OR s.notes LIKE :q_notes)';
+        $params[':q_title'] = $likeTerm;
+        $params[':q_code']  = $likeTerm;
+        $params[':q_notes'] = $likeTerm;
     }
 
     if (array_key_exists($filterVis, $visibilityOptions)) {
@@ -160,7 +163,7 @@
                         <?php
                         $rowId = (int) $row['id'];
                         $rawLang = (string) $row['language'];
-                        $hljsClass = $hljsLangMap($rawLang) ?? 'plaintext';
+                        $hljsClass = $hljsLangMap[$rawLang] ?? 'plaintext';
                         $searchBlob = strtolower(
                             (string) $row['title'] . ' ' .
                             (string) ($row['notes'] ?? '') . ' ' .

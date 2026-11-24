@@ -221,7 +221,7 @@ textarea.notes-area {
 
 .btn-del {
     background: var(--danger);
-    color: var(--danger);
+    color: #fff;
 }
 
 .btn-sm {
