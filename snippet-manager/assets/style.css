@@ -316,6 +316,12 @@ pre.expanded {
     max-height: none;
 }
 
+pre code.hljs {
+    background: transparent;
+    padding: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlom Consolas, monospace;;
+}
+
 .actions {
     display: flex;
     gap: 6px;

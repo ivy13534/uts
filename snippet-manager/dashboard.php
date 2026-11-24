@@ -45,6 +45,7 @@
             JOIN users u ON s.user_id = u.id
             WHERE 1=1';
     $params = [];
+
     if ($search !== '') {
         $sql .= ' AND (s.title LIKE :q OR s.code LIKE :q OR s.notes LIKE :q)';
         $params[':q'] = '%' . $search . '%';
@@ -73,6 +74,15 @@
             $counts[$visKey]++;
         }
     }
+
+    $hljsLangMap = [
+        'php'           => 'php',
+        'cpp'           => 'cpp',
+        'sql'           => 'sql',
+        'javascript'    => 'javascript',
+        'bash'          => 'bash',
+        'html_css'      => 'xml',
+    ];
 ?>
 
 <!DOCTYPE html>
@@ -81,6 +91,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Snippet Manager</title>
+    <link rel="stylesheet" href="assets/atom-one-dark.min.css">
     <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
@@ -91,6 +102,10 @@
                 Login sebagai: <strong><?= e($_SESSION['username']) ?></strong> • DB :
                 <code>snippet_manager_3716</code>
             </small>
+        </div>
+        <div class="nav">
+            <a href="create.php" class="btn btn-primary">+ Tambah Snippet</a>
+            <a href="logout.php" class="btn btn-logout">Logout</a>
         </div>
     </div>
 
@@ -144,11 +159,13 @@
                     <?php foreach ($snippets as $idx => $row): ?>
                         <?php
                         $rowId = (int) $row['id'];
+                        $rawLang = (string) $row['language'];
+                        $hljsClass = $hljsLangMap($rawLang) ?? 'plaintext';
                         $searchBlob = strtolower(
                             (string) $row['title'] . ' ' .
                             (string) ($row['notes'] ?? '') . ' ' .
                             (string) $row['code'] . ' ' .
-                            (string) $row['language']
+                            $rawLang
                         );
                         ?>
 
@@ -165,9 +182,10 @@
                                     <button type="button" class="btn btn-sm btn-toggle-code"
                                     data-target="code-<?= $rowId ?>">Perluas</button>
                                 </div>
-                                <pre><code id="code-<?= $rowId ?>"><?= e($row['code']) ?></code></pre>
+                                <pre><code id="code-<?= $rowId ?>" class="language-<?= 
+                                e($hljsClass) ?>"><?= e($row['code']) ?></code></pre>
                             </td>
-                            <td><?= e($languages[$row['language']] ?? $row['language']) ?></td>
+                            <td><?= e($languages[$rawLang] ?? $rawLang) ?></td>
                             <td><?= e($visibilityOptions[$row['visibility']] ?? $row['visibility']) ?></td>
                             <td><?= e($row['review_date']) ?></td>
                             <td>
@@ -196,6 +214,7 @@
             </tbody>
         </table>
     </div>
+    <script src="assets/highlight.min.js"></script>
     <script src="assets/app.js" defer></script>
 </body>
 </html>
