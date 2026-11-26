@@ -7,17 +7,22 @@
 
     $languages          = getLanguages();
     $visibilityOptions  = getVisibilityOptions();
+
+    // Proses hapus data snippet
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete') {
         $deleteId = (int) ($_POST['id'] ?? 0);
 
         if ($deleteId > 0) {
+            // Ambil alih lampiran
             $getFile = $conf->prepare('SELECT attachment_path FROM snippets WHERE id = :id');
             $getFile->execute([':id' => $deleteId]);
             $rowFile = $getFile->fetch();
 
+            // Hapus record
             $del = $conf->prepare('DELETE FROM snippets WHERE id = :id');
             $del->execute([':id' => $deleteId]);
 
+            // Hapus file difolder uploads jika valid dan ada
             if (!empty($rowFile['attachment_path'])) {
                 $fullPath = __DIR__ . '/' . ltrim((string) $rowFile['attachment_path'], '/');
                 if (is_file($fullPath)) {
@@ -30,9 +35,9 @@
         exit;
     }
 
-    $search     = trim((string) ($_GET['q'] ?? ''));
-    $filterVis  = (string) ($_GET['visibility'] ?? '');
-    $msg        = (string) ($_GET['msg'] ?? '');
+    $search     = trim((string) ($_GET['q'] ?? '')); // kata kunci pencarian
+    $filterVis  = (string) ($_GET['visibility'] ?? ''); // Filter visibilitas
+    $msg        = (string) ($_GET['msg'] ?? ''); // Pesan status
 
     $notices = [
         'created' => 'Snippet baru berhasil ditambahkan.',
@@ -40,12 +45,14 @@
         'deleted' => 'Snippet berhasil dihapus.',
     ];
 
+    // Query select username
     $sql = 'SELECT s.*, u.username AS author
             FROM snippets s
             JOIN users u ON s.user_id = u.id
             WHERE 1=1';
     $params = [];
 
+    // Cegah SQLSTATE[HY093]
     if ($search !== '') {
         $likeTerm = '%' . $search . '%';
         $sql .= ' AND (s.title LIKE :q_title OR s.code LIKE :q_code OR s.notes LIKE :q_notes)';
@@ -54,17 +61,19 @@
         $params[':q_notes'] = $likeTerm;
     }
 
+    // Terapkan filter visibility jika valid
     if (array_key_exists($filterVis, $visibilityOptions)) {
         $sql .= ' AND s.visibility = :visibility';
         $params[':visibility'] = $filterVis;
     }
 
-    $sql .= ' ORDER BY s.created_at DESC';
+    $sql .= ' ORDER BY s.created_at DESC'; // Urutkan snippet terbaru paling atas
 
     $stmt = $conf->prepare($sql);
     $stmt->execute($params);
-    $snippets = $stmt->fetchAll();
+    $snippets = $stmt->fetchAll(); // Ambil semua baris hasil query  sebagai array asosiatif
 
+    // Hitung jumlah data
     $counts = [
         'total'             => count($snippets),
         'public_internal'   => 0,
@@ -78,6 +87,7 @@
         }
     }
 
+    // Mapping bahasa ke class bahasa hightlight.js
     $hljsLangMap = [
         'php'           => 'php',
         'cpp'           => 'cpp',
@@ -129,6 +139,7 @@
         <a href="dashboard.php" class="btn btn-muted">Reset</a>
     </form>
 
+    <!-- Input filter cepat disisi klien -->
     <div class="field">
         <input type="text" id="quickFilter" placeholder="Filter cepat baris tabel yang tampil di layar...">
     </div>
@@ -157,6 +168,7 @@
                         $rowId = (int) $row['id'];
                         $rawLang = (string) $row['language'];
                         $hljsClass = $hljsLangMap[$rawLang] ?? 'plaintext';
+                        // Gabung teks untuk pencarian cepat di browser via attribut data-search
                         $searchBlob = strtolower(
                             (string) $row['title'] . ' ' .
                             (string) ($row['notes'] ?? '') . ' ' .
@@ -173,6 +185,7 @@
                                     <div class="snippet-note"><?= e($row['notes']) ?></div>
                                 <?php endif; ?>
                                 <div class="code-toolbar">
+                                    <!-- Data target menyambung ke id"code-<?=  $rowId ?>-->
                                     <button type="button" class="btn btn-sm btn-copy" 
                                     data-target="code-<?= $rowId ?>">Copy</button>
                                     <button type="button" class="btn btn-sm btn-toggle-code"
@@ -186,6 +199,7 @@
                             <td><?= e($row['review_date']) ?></td>
                             <td>
                                 <?php if (!empty($row['attachment_path'])): ?>
+                                    <!-- Sambung ke file tersimpan di folder uploads -->
                                     <a href="<?= e($row['attachment_path']) ?>" class="link-accent"
                                     target="_blank" rel="noopener">Lihat File</a>
                                 <?php else: ?>

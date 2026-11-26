@@ -1,17 +1,20 @@
 <?php
     declare(strict_types=1);
 
+    // Escape karakter khusus HTML
     function e(?string $value): string {
+        // Ubah karakter jadi entitas HTML; ubah null jadi string kosong
         return htmlspecialchars($value ?? '', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }
 
+    //Konversi nilai dari php.ini jadi byte (int)
     function parseIniBytes(string $val): int {
-        $val = trim($val);
+        $val = trim($val); // Hapus spasi awal dan akhir
         if ($val ==='') {
             return 0;
         }
 
-        $last = strtolower($val[strlen($val) -1]);
+        $last = strtolower($val[strlen($val) -1]); // ambil karakter akhir
         $num = (float) $val;
 
         return match ($last) {
@@ -47,10 +50,12 @@
         return ['txt', 'md', 'sql', 'php', 'cpp', 'js', 'png', 'jpg', 'jpeg', 'webp'];
     }
 
+    // Menangani siklus validasi upload, penyimpanan, dan penghapusan file
     function handleSnippetUpload(array $file, ?string $oldPath, array &$errors, bool $replaceOld = false): ?string {
         $errCode = $file['error'] ?? UPLOAD_ERR_NO_FILE;
 
         if ($errCode === UPLOAD_ERR_NO_FILE) {
+            // Kembalikan null jika tidak ada file baru
             return $replaceOld ? $oldPath : null;
         }
 
@@ -64,16 +69,17 @@
             return $replaceOld ? $oldPath : null;
         }
 
-        //Cek ukuran file
-        $maxBytes = 12 * 1024 * 1024; // 12 MB
+        // Cek ukuran file
+        $maxBytes = 12 * 1024 * 1024; // maks 12 MB
         $size = (int) ($file['size'] ?? 0);
         if ($size <= 0 || $size > $maxBytes) {
             $errors[] = 'Ukuran file maksimal 12 MB.';
             return $replaceOld ? $oldPath : null;
         }
 
-        //Cek ekstension file
-        $allowedExt = getAllowedUploadExtensions();
+        // Cek ekstension file
+        $allowedExt = getAllowedUploadExtensions(); // Ambil daftar ekstensi
+        // Ambil ekstensi file asli
         $ext = strtolower(pathinfo((string) ($file['name'] ?? ''), PATHINFO_EXTENSION));
 
         if ($ext === '' || !in_array($ext, $allowedExt, true)) {
@@ -81,35 +87,36 @@
             return $replaceOld ? $oldPath : null;
         }
 
-        $tmpName = (string) ($file['tmp_name'] ?? '');
-        if ($tmpName === '' || !is_uploaded_file($tmpName)) {
+        $tmpName = (string) ($file['tmp_name'] ?? ''); // Path sementara di server
+        if ($tmpName === '' || !is_uploaded_file($tmpName)) { // Validasi hasil POST HTTP
             $errors[] = 'File upload tidak valid.';
             return $replaceOld ? $oldPath : null;
         }
 
-        //Buat folder uploads
+        // Buat folder uploads
         $uploadDir = dirname(__DIR__) . '/uploads';
         if (!is_dir($uploadDir) && !mkdir($uploadDir, 0775, true) && !is_dir($uploadDir)) {
             $errors[] = 'Folder uploads tidak dapat dibuat.';
             return $replaceOld ? $oldPath : null;
         }
 
+        // Cek izin buat folder
         if (!is_writable($uploadDir)) {
             $errors[] ='Folder uploads tidak memiliki izin tulis.';
             return $replaceOld ? $oldPath : null;
         }
 
-        //Buat nama file random
+        // Buat nama file random
         $newName = 'snip_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
         $target = $uploadDir . '/' . $newName;
 
-        //Memindahkan file
+        // Memindahkan file
         if (!move_uploaded_file($tmpName, $target)) {
             $errors[] = 'Gagal memindahkan file ke folder uploads.';
             return $replaceOld ? $oldPath : null;
         }
 
-        //Menghapus file lama diedit jika $replaceOld true
+        // Menghapus file lama diedit jika $replaceOld true
         if ($replaceOld && !empty($oldPath)) {
             $oldFull = dirname(__DIR__) . '/' . ltrim((string) $oldPath, '/');
             if (is_file($oldFull)) {

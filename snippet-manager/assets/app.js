@@ -1,6 +1,8 @@
+/// Tunggu DOM dimuat
 document.addEventListener("DOMContentLoaded", () => {
-    const MAX_UPLOAD_BYTES = 12 * 1024 *1024;
+    const MAX_UPLOAD_BYTES = 12 * 1024 *1024; // Batas file
 
+    // Hightlight semua blok <pre></pre> kecuali #liveCodePreview
     if (typeof hljs !== "undefined") {
         document.querySelectorAll("pre code").forEach((block) => {
             if (block.id === "liveCodePreview") return;
@@ -8,6 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // Sambung elemen form kode
     const codeInput = document.getElementById("code");
     const langSelect = document.getElementById("language");
     const livePreview = document.getElementById("liveCodePreview");
@@ -29,7 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
             livePreview.className = `language-${mappedLang}`;
 
             if (typeof hljs !== "undefined") {
-                delete livePreview.dataset.highlighted;
+                delete livePreview.dataset.highlighted; // Reset flag Hightlight
                 hljs.highlightElement(livePreview);
             }
         };
@@ -41,6 +44,7 @@ document.addEventListener("DOMContentLoaded", () => {
         updateLivePreview();
     }
 
+    // Tombol copy ke clipboard
     document.querySelectorAll(".btn-copy").forEach((btn) => {
         btn.addEventListener("click", async () => {
             const targetId = btn.getAttribute("data-target");
@@ -51,6 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const originalText = btn.textContent;
 
             try {
+                // Gunakan clipboard API jika secure context tersedia, fallback ke textarea + execCommand
                 if (navigator.clipboard && window.isSecureContext) {
                     await navigator.clipboard.writeText(text);
                 } else {
@@ -80,6 +85,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
+    // Tombol Perlua/Ciutkan toggle
     document.querySelectorAll(".btn-toggle-code").forEach((btn) => {
         btn.addEventListener("click", () => {
             const targetId = btn.getAttribute("data-target");
@@ -92,6 +98,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
+    //Filter cepat baris tabel berdasarkan attribut data-search
     const quickFilter = document.getElementById("quickFilter");
     const tableRows = document.querySelectorAll("tbody tr[data-search]");
     if (quickFilter && tableRows.length > 0) {
@@ -105,6 +112,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // Validasi ukuran file <= 12 MB; cegah jika lebih
     document.querySelectorAll('input[type="file"]').forEach((input) => {
         const infoEl = input.parentElement?.querySelector(".file-selected-info");
         const formEl = input.closest("form");

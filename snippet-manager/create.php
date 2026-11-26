@@ -5,6 +5,7 @@
     require_once __DIR__ . '/includes/auth.php';
     require_once __DIR__ . '/includes/function.php';
 
+    // Menyamakan zona waktu
     date_default_timezone_set('Asia/Jakarta');
 
     //Inisialisasi nilai bawaan
@@ -30,11 +31,12 @@
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $maxUploadBytes = 12 * 1024 * 1024;
-        $contentLength  = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
+        // Bandingkan dengan batas upload
+        $contentLength  = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0); // Total ukuran POST server
         $postMaxBytes   = parseIniBytes((string) ini_get('post_max_size'));
         $serverLimit    = $postMaxBytes > 0 ? $postMaxBytes : $maxUploadBytes;
 
-        //Proses validasi
+        //Proses validasi dan ambil data
         $title      = trim((string) ($_POST['title'] ?? ''));
         $language   = (string) ($_POST['language'] ?? 'php');
         $visibility = (string) ($_POST['visibility'] ?? 'public_internal');
@@ -42,6 +44,7 @@
         $code       = (string) ($_POST['code'] ?? '');
         $notes      = trim((string) ($_POST['notes'] ?? ''));
 
+        // Format tanggal
         $parsedDate = null;
         foreach (['m-d-Y', 'm/d/Y', 'Y-m-d'] as $fmt) {
             $dt = \DateTimeImmutable::createFromFormat('!' . $fmt, $rawDate);
@@ -53,6 +56,7 @@
 
         $reviewDate = $parsedDate ? $parsedDate->format('Y-m-d') : date('Y-m-d');
 
+        // Validasi batas ukuran request diserver
         if ($contentLength > $maxUploadBytes || (empty($_POST) && empty($_FILES) &&
         $contentLength > $serverLimit)) {
             $errors[] = 'Ukuran file/request melebihi batas maksimal 12 MB. Data tidak disimpan.';
@@ -78,7 +82,7 @@
             $errors[] = 'Kode snippet wajib diisi.';
         }
 
-        //Panggil untuk memproses file upload
+        // Proses upload lampiran jika validasi awal belum gagal
         $attachmentPath = null;
         if (empty($errors)) {
             $attachmentPath = handleSnippetUpload($_FILES['attachment'] ?? [], null, $errors, false);
@@ -92,8 +96,7 @@
             );
             //Menjalankan query
             $stmt->execute([
-                //user_id diambil dari $_SESSION['user_id']
-                ':user_id'          => (int) $_SESSION['user_id'],
+                ':user_id'          => (int) $_SESSION['user_id'], // Relasi foreign key ke user.id
                 ':title'            => $title,
                 ':language'         => $language,
                 ':visibility'       => $visibility,
@@ -130,6 +133,7 @@
                 </div>
             <?php endif; ?>
 
+            <!-- enctype="multipart/form-data" ada agar $_FILES['attachment'] terkirim -->
             <form action="create.php" method="POST" enctype="multipart/form-data">
                 <div class="field">
                     <label for="title" class="lbl">Judul Snippet</label>
@@ -171,6 +175,7 @@
                     <textarea name="code" id="code" class="code-area" required><?= e($code) ?></textarea>
                 </div>
 
+                // Pratinjau langsung update oleh assets/app.js
                 <div class="field">
                     <div class="code-toolbar" style="justify-content: space-between; align-items:center;">
                         <span class="lbl" style="margin: 0;">Pratinjau highlight</span>

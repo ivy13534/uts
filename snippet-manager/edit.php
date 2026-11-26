@@ -7,12 +7,13 @@
 
     date_default_timezone_set('Asia/Jakarta');
     
-    $id = (int) ($_GET['id'] ?? $_POST['id'] ?? 0);
+    $id = (int) ($_GET['id'] ?? $_POST['id'] ?? 0);  // Ambil id dari url GET atau hidden input POST
     if ($id <= 0) {
         header('Location: dashboard.php');
         exit;
     }
 
+    // Ambil data snippet lama
     $stmt = $conf->prepare('SELECT * FROM snippets WHERE id = :id LIMIT 1');
     $stmt->execute([':id' => $id]);
     $snippet = $stmt->fetch();
@@ -21,6 +22,7 @@
     $visibilityOptions  = getVisibilityOptions();
     $errors             = [];
 
+    // Nilai awal dari record database
     $title          = (string) $snippet['title'];
     $language       = (string) $snippet['language'];
     $visibility     = (string) $snippet['visibility'];
@@ -88,6 +90,7 @@
             $errors[] = 'Kode snippet wajib diisi.';
         }
 
+        // True agar file lama dihapus jika file baru berhasil
         $newAttach = $currentAttach;
         if (empty($errors)) {
             $newAttach = handleSnippetUpload($_FILES['attachment'] ?? [], $currentAttach,
